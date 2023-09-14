@@ -1,4 +1,4 @@
-import express, { Express, NextFunction, Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
@@ -6,8 +6,9 @@ import multer, { StorageEngine } from 'multer';
 // const cors = require('cors');
 
 const app = express();
-const PORT = 8000;
+const PORT = 4000;
 const prisma = new PrismaClient();
+const { sign, decode, verify } = jwt;
 
 // app.use(cors())
 app.use(express.json())
@@ -71,7 +72,7 @@ app.use('/register', async (req, res) => {
 app.use('/login', async (req, res) => {
     const { email, password } = req.body
 
-    if(email == null) throw new Error('email undefined');
+    // if(email == null) throw new Error('email undefined');
 
     const user = await prisma.users.findUnique({
         where: {
@@ -96,7 +97,7 @@ app.use('/login', async (req, res) => {
     if(isPasswordValid){
         const payload = {
             id: user.id,
-            name: user.name,
+            email: user.name,
             address: user.address
         }
         
@@ -104,13 +105,12 @@ app.use('/login', async (req, res) => {
 
         const expiresIn = 60 * 60 * 1;
 
-        const token = jwt.sign(payload, secret, {expiresIn: expiresIn})
+        const token = jwt.sign({ email: user.email }, secret, {expiresIn: expiresIn})
         
         return res.json({
             data: {
                 id: user.id,
                 name: user.name,
-                email: user.email,
                 address: user.address
             },
             token: token
